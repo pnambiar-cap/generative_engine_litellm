@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import yaml
 from typing import Iterator, AsyncIterator, Any, Optional, Union
 from litellm import CustomLLM
 from litellm.types.utils import GenericStreamingChunk, ModelResponse, ImageResponse
@@ -10,17 +11,21 @@ class GenerativeEngineLLM(CustomLLM):
     def __init__(self, api_base: str = "https://api.generative.engine.capgemini.com/v1"):
         super().__init__()
         self.api_base = api_base
-        self.api_key = self.get_api_key()
+        self.config = self.load_config()
+        self.api_key = self.config["litellm_settings"]["generative_engine_api_key"]
+        self.provider = self.config["litellm_settings"].get("generative_engine_provider", "capgemini")
+        self.interface = self.config["litellm_settings"].get("generative_engine_interface", "default")
+        self.mode = self.config["litellm_settings"].get("generative_engine_mode", "default")
         self.headers = {
             "x-api-key": self.api_key,
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
-    def get_api_key(self):
+
+    def load_config(self):
         with open("config.yaml", "r") as config_file:
-            config = yaml.safe_load(config_file)
-        return config["litellm_settings"]["generative_engine_api_key"]
-    
+            return yaml.safe_load(config_file)
+
     def completion(self, model: str, messages: list, *args, **kwargs) -> ModelResponse:
         url = f"{self.api_base}/llm/invoke"
         
@@ -28,14 +33,12 @@ class GenerativeEngineLLM(CustomLLM):
         
         payload = {
             "action": "run",
-            "modelInterface": "langchain",
+            "modelInterface": self.interface,
             "data": {
-                "mode": "chain",
                 "text": prompt,
                 "files": [],
                 "modelName": model,
-                "provider": "bedrock",
-                "sessionId": "123e4567-e89b-12d3-a456-426614174003",
+                "provider": self.provider,
                 "modelKwargs": {
                     "maxTokens": kwargs.get("max_tokens", 512),
                     "temperature": kwargs.get("temperature", 0.6),
@@ -44,6 +47,13 @@ class GenerativeEngineLLM(CustomLLM):
                 }
             }
         }
+
+        if self.mode != "default":
+            payload["data"]["mode"] = self.mode
+
+        session_id = kwargs.get("session_id")
+        if session_id:
+            payload["data"]["sessionId"] = session_id
 
         try:
             response = requests.post(url, headers=self.headers, json=payload)
@@ -80,14 +90,12 @@ class GenerativeEngineLLM(CustomLLM):
         
         payload = {
             "action": "run",
-            "modelInterface": "langchain",
+            "modelInterface": self.interface,
             "data": {
-                "mode": "chain",
                 "text": prompt,
                 "files": [],
                 "modelName": model,
-                "provider": "bedrock",
-                "sessionId": "123e4567-e89b-12d3-a456-426614174003",
+                "provider": self.provider,
                 "modelKwargs": {
                     "maxTokens": kwargs.get("max_tokens", 512),
                     "temperature": kwargs.get("temperature", 0.6),
@@ -96,6 +104,13 @@ class GenerativeEngineLLM(CustomLLM):
                 }
             }
         }
+
+        if self.mode != "default":
+            payload["data"]["mode"] = self.mode
+
+        session_id = kwargs.get("session_id")
+        if session_id:
+            payload["data"]["sessionId"] = session_id
 
         try:
             with requests.post(url, headers=self.headers, json=payload, stream=True) as response:

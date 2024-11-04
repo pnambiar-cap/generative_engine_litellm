@@ -63,7 +63,7 @@ This repository contains the necessary files to integrate the Capgemini Generati
 
 ## Security Note
 
-Remember to keep your `config.yaml` file secure and never commit it with your actual API key to a public repository. Consider using environment variables or a secure secrets management system in a production environment.
+Remember to keep your `config.yaml` file secure and never commit it with your actual API key to a public repository. config.yaml is in .gitignore file.
 
 ## Contributing
 

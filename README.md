@@ -33,7 +33,7 @@ This repository contains the necessary files to integrate the Capgemini Generati
 
 1. To run the test script:
    ```sh
-   python test_generative_engine.py
+   python test_generative_engine_litellm.py
    ```
    This will demonstrate both streaming and non-streaming completions using the Generative Engine.
 

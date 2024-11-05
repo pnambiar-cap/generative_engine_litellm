@@ -38,28 +38,61 @@ This repository contains the necessary files to integrate the Capgemini Generati
    This will demonstrate both streaming and non-streaming completions using the Generative Engine.
 
 2. To use in your own code:
-   ```python
-   import litellm
-   from litellm import completion
-   from generative_engine_handler import generative_engine_llm
 
-   # Register the custom handler
-   litellm.custom_provider_map = [
-       {"provider": "generative-engine", "custom_handler": generative_engine_llm}
-   ]
+```python
+import litellm
+from litellm import completion
+import uuid
+import yaml
+import logging
 
-   # Use the model
-   response = completion(
-       model="generative-engine-model",
-       messages=[{"role": "user", "content": "Your prompt here"}]
-   )
-   print(response.choices[0].message.content)
-   ```
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def load_config():
+    with open("config.yaml", "r") as config_file:
+        return yaml.safe_load(config_file)
+
+config = load_config()
+model_name = config['litellm_settings']['generative_engine_model']
+
+# Load the custom handler
+from generative_engine_handler import GenerativeEngineLLM
+
+# Create an instance of the custom handler
+generative_engine_llm = GenerativeEngineLLM()
+
+# Register the custom handler
+litellm.custom_provider_map = [
+    {"provider": "generative-engine", "custom_handler": generative_engine_llm}
+]
+
+logger.info(f"Custom provider map: {litellm.custom_provider_map}")
+
+def test_completion():
+    try:
+        response = completion(
+            model=model_name,
+            messages=[{"role": "user", "content": "What is the capital of France?"}]
+        )
+        logger.info("Completion Response:")
+        logger.debug(f"Raw response: {response}")
+        if response and response.choices and response.choices[0].message:
+            logger.info(f"Content: {response.choices[0].message.content}")
+        else:
+            logger.info("No content in the response")
+    except Exception as e:
+        logger.error(f"Completion Error: {str(e)}")
+
+# Run the test function
+test_completion()
+```
 
 ## Customization
 
-- You can modify the `model_list` in `config.yaml` to add more models or change the existing one.
-- Adjust the API base URL in `generative_engine_handler.py` if needed.
+- You can modify the  `config.yaml` update the model you want to use
+  
 
 ## Security Note
 

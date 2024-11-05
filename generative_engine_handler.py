@@ -1,17 +1,23 @@
 import requests
 import json
 import time
+import logging
 import yaml
-from typing import Iterator, AsyncIterator, Any, Optional, Union
+from enum import Enum
+from typing import Any, AsyncIterator, Iterator, List, Optional, Union
 from litellm import CustomLLM
 from litellm.types.utils import GenericStreamingChunk, ModelResponse, ImageResponse
 import litellm
 
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
 class GenerativeEngineLLM(CustomLLM):
-    def __init__(self, api_base: str = "https://api.generative.engine.capgemini.com/v1"):
+    def __init__(self):
         super().__init__()
-        self.api_base = api_base
         self.config = self.load_config()
+        self.api_base = self.config["litellm_settings"]["generative_engine_api_base"]
+        self.api_endpoint = self.config["litellm_settings"]["generative_engine_api_endpoint"]
         self.api_key = self.config["litellm_settings"]["generative_engine_api_key"]
         self.provider = self.config["litellm_settings"].get("generative_engine_provider", "capgemini")
         self.interface = self.config["litellm_settings"].get("generative_engine_interface", "default")
@@ -21,13 +27,14 @@ class GenerativeEngineLLM(CustomLLM):
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
+        logger.info(f"Loaded config: {self.config}")
 
     def load_config(self):
         with open("config.yaml", "r") as config_file:
             return yaml.safe_load(config_file)
 
     def completion(self, model: str, messages: list, *args, **kwargs) -> ModelResponse:
-        url = f"{self.api_base}/llm/invoke"
+        url = f"{self.api_base}{self.api_endpoint}"
         
         prompt = " ".join([m["content"] for m in messages])
         
@@ -54,37 +61,52 @@ class GenerativeEngineLLM(CustomLLM):
         session_id = kwargs.get("session_id")
         if session_id:
             payload["data"]["sessionId"] = session_id
+            logger.info(f"Using session ID: {session_id}")
+
+        logger.info(f"Sending request to {url}")
+        logger.info(f"Headers: {json.dumps(self.headers)}")
+        logger.info(f"Payload: {json.dumps(payload)}")
 
         try:
-            response = requests.post(url, headers=self.headers, json=payload)
+            response = requests.post(url, headers=self.headers, json=payload, timeout=60)
             response.raise_for_status()
+            logger.info(f"Received response: {response.text}")
 
-            content = ""
-            for line in response.text.split('\n'):
-                if line.startswith('data: '):
-                    try:
-                        json_data = json.loads(line[6:])
-                        if json_data['action'] == 'final_response':
-                            content = json_data['data']['content']
-                            break
-                    except json.JSONDecodeError:
-                        continue
+            json_response = response.json()
+            content = json_response.get("content", "")
+            session_id = json_response.get("sessionId", "")
+            usage = json_response.get("metadata", {}).get("usage", {})
 
-            return ModelResponse(
+            logger.info(f"Extracted content: {content}")
+            logger.info(f"Session ID: {session_id}")
+
+            model_response = ModelResponse(
                 id=f"geneng-{time.time()}",
                 choices=[{
                     "message": {"role": "assistant", "content": content.strip()},
                     "finish_reason": "stop"
                 }],
                 model=model,
-                usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}  # Placeholder values
+                usage={
+                    "prompt_tokens": usage.get("input_tokens", 0),
+                    "completion_tokens": usage.get("output_tokens", 0),
+                    "total_tokens": usage.get("total_tokens", 0)
+                }
             )
 
+            logger.info(f"Created ModelResponse: {model_response}")
+
+            return model_response
+
         except requests.RequestException as e:
+            logger.error(f"API request failed: {str(e)}")
+            logger.error(f"Response status code: {e.response.status_code if e.response else 'No response'}")
+            logger.error(f"Response headers: {e.response.headers if e.response else 'No response'}")
+            logger.error(f"Response content: {e.response.content if e.response else 'No response'}")
             raise Exception(f"API request failed: {str(e)}")
 
-    def streaming(self, model: str, messages: list, *args, **kwargs) -> Iterator[GenericStreamingChunk]:
-        url = f"{self.api_base}/llm/invoke"
+    def streaming(self, model: str, messages: List[dict], *args, **kwargs) -> Iterator[GenericStreamingChunk]:
+        url = f"{self.api_base}{self.api_endpoint}"
         
         prompt = " ".join([m["content"] for m in messages])
         
@@ -111,44 +133,51 @@ class GenerativeEngineLLM(CustomLLM):
         session_id = kwargs.get("session_id")
         if session_id:
             payload["data"]["sessionId"] = session_id
+            logger.info(f"Using session ID: {session_id}")
+
+        logger.info(f"Final payload: {json.dumps(payload)}")
+
+        timeout = kwargs.get("timeout", 60)
+
+        logger.info(f"Sending streaming request to {url}")
+        logger.info(f"Payload: {json.dumps(payload)}")
 
         try:
-            with requests.post(url, headers=self.headers, json=payload, stream=True) as response:
+            with requests.post(url, headers=self.headers, json=payload, stream=True, timeout=timeout) as response:
                 response.raise_for_status()
                 for line in response.iter_lines():
-                    if line.startswith(b'data: '):
-                        try:
-                            json_data = json.loads(line[6:])
-                            if json_data['action'] == 'token':
-                                yield GenericStreamingChunk(
-                                    text=json_data['data']['token'],
-                                    is_finished=False
-                                )
-                            elif json_data['action'] == 'final_response':
-                                yield GenericStreamingChunk(
-                                    text=json_data['data']['content'],
-                                    is_finished=True,
-                                    finish_reason="stop"
-                                )
-                                break
-                        except json.JSONDecodeError:
-                            continue
+                    if line:
+                        line = line.decode('utf-8')
+                        if line.startswith('data: '):
+                            try:
+                                json_data = json.loads(line[6:])
+                                action_type = json_data.get('action')
+                                if action_type == 'token':
+                                    yield GenericStreamingChunk(
+                                        text=json_data['data']['token'],
+                                        is_finished=False
+                                    )
+                                elif action_type == 'final_response':
+                                    yield GenericStreamingChunk(
+                                        text=json_data['data']['content'],
+                                        is_finished=True,
+                                        finish_reason="stop"
+                                    )
+                                    break
+                            except json.JSONDecodeError:
+                                logger.warning(f"Failed to parse JSON: {line}")
         except requests.RequestException as e:
+            logger.error(f"API request failed: {str(e)}")
+            logger.error(f"Response status code: {e.response.status_code if e.response else 'No response'}")
+            logger.error(f"Response headers: {e.response.headers if e.response else 'No response'}")
+            logger.error(f"Response content: {e.response.content if e.response else 'No response'}")
             raise Exception(f"API request failed: {str(e)}")
 
-    # Implement async methods if needed
-    async def acompletion(self, *args, **kwargs) -> ModelResponse:
-        # Implement async completion
-        pass
-
-    async def astreaming(self, *args, **kwargs) -> AsyncIterator[GenericStreamingChunk]:
-        # Implement async streaming
-        pass
-
-# Usage
 generative_engine_llm = GenerativeEngineLLM()
 
 # Register the custom handler
-litellm.custom_provider_map = [
+litellm.custom_provider_map =  [ 
     {"provider": "generative-engine", "custom_handler": generative_engine_llm}
-]
+    ]   
+
+

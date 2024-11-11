@@ -66,7 +66,7 @@ Create a configuration file named `generative_engine_config.yaml` in the root di
 
 ```yaml
 generative_engine:
-  GENERATIVE_ENGINE_API_KEY: 'your-api-key-here'
+  GENERATIVE_ENGINE_API_KEY: 'your-api-key'
   GENERATIVE_ENGINE_API_BASE: 'https://api.generative.engine.capgemini.com'
   GENERATIVE_ENGINE_API_ENDPOINT: '/v2/llm/invoke'
 
@@ -76,14 +76,29 @@ anthropic.claude-v2:
   GENERATIVE_ENGINE_MODEL_PROVIDER: 'bedrock'
 
 openai.gpt-3.5-turbo:
-  GENERATIVE_ENGINE_MODEL_INTERFACE: 'default'
-  GENERATIVE_ENGINE_MODEL_MODE: 'default'
-  GENERATIVE_ENGINE_MODEL_PROVIDER: 'openai'
+  GENERATIVE_ENGINE_MODEL_INTERFACE: 'langchain'
+  GENERATIVE_ENGINE_MODEL_MODE: 'chain'
+  GENERATIVE_ENGINE_MODEL_PROVIDER: 'azure'
 
-google.palm-2:
-  GENERATIVE_ENGINE_MODEL_INTERFACE: 'custom'
-  GENERATIVE_ENGINE_MODEL_MODE: 'advanced'
-  GENERATIVE_ENGINE_MODEL_PROVIDER: 'google'
+openai.gpt-4o:
+  GENERATIVE_ENGINE_MODEL_INTERFACE: 'langchain'
+  GENERATIVE_ENGINE_MODEL_MODE: 'chain'
+  GENERATIVE_ENGINE_MODEL_PROVIDER: 'azure'
+
+openai.o1-mini:
+  GENERATIVE_ENGINE_MODEL_INTERFACE: 'langchain'
+  GENERATIVE_ENGINE_MODEL_MODE: 'chain'
+  GENERATIVE_ENGINE_MODEL_PROVIDER: 'azure'
+
+openai.o1-preview:
+  GENERATIVE_ENGINE_MODEL_INTERFACE: 'langchain'
+  GENERATIVE_ENGINE_MODEL_MODE: 'chain'
+  GENERATIVE_ENGINE_MODEL_PROVIDER: 'azure'
+
+us.meta.llama3-2-3b-instruct-v1:0:
+  GENERATIVE_ENGINE_MODEL_INTERFACE: 'langchain'
+  GENERATIVE_ENGINE_MODEL_MODE: 'chain'
+  GENERATIVE_ENGINE_MODEL_PROVIDER: 'bedrock'
 ```
 
 - Replace `'your-api-key-here'` with your actual Capgemini Generative Engine API key.
@@ -119,7 +134,8 @@ generative_engine_config.yaml
 
    # Use the model
    response = completion(
-       model="generative-engine-model",
+       #example model-name - anthropic.claude-v2, ensure 
+       model="generative-engine/model-name", 
        messages=[{"role": "user", "content": "Your prompt here"}]
    )
    print(response.choices[0].message.content)

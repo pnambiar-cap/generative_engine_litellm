@@ -1,1 +1,7 @@
 config.yaml
+litellm_config.yaml
+_pycache__/
+*.pyc
+dist/
+build/
+*.egg-info/

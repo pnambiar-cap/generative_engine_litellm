@@ -126,6 +126,11 @@ generative_engine_config.yaml
    import litellm
    from litellm import completion
    from generative_engine_handler import generative_engine_llm
+   # Get the path to the configuration file
+   config_path = os.path.join(os.getcwd(), 'generative_engine_config.yaml')
+   # Load the custom handler with the config path
+   from generative_engine_litellm.generative_engine_handler import GenerativeEngineLLM
+   generative_engine_llm = GenerativeEngineLLM(config_path=config_path)
 
    # Register the custom handler
    litellm.custom_provider_map = [

@@ -75,6 +75,7 @@ class GenerativeEngineLLM(CustomLLM):
 
         # Combine messages into a single prompt
         prompt = " ".join([m["content"] for m in messages])
+        logger.info(f"model : {model} - Received prompt: {prompt}")
 
         # Get model-specific configurations
         model_config = self.config.get(model, {})
@@ -143,6 +144,11 @@ class GenerativeEngineLLM(CustomLLM):
             )
 
             logger.debug(f"Created ModelResponse: {model_response}")
+            
+            if model_response and model_response.choices and model_response.choices[0].message:
+                logger.info(f"model response content: {model_response.choices[0].message.content}")
+            else:
+                logger.info("No content in the response")
 
             return model_response
 

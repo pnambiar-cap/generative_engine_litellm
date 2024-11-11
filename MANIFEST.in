@@ -1,2 +1,2 @@
-exclude config.yaml
-exclude config.yaml.sample
+exclude generative_engine_config.yaml
+exclude generative_engine_config.yaml.sample

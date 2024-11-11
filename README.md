@@ -100,100 +100,35 @@ generative_engine_config.yaml
 
 ## Usage
 
-### Running the Test Script
+1. To run the test script:
+   ```sh
+   python test_generative_engine_litellm.py
+   ```
+   This will demonstrate both streaming and non-streaming completions using the Generative Engine.
 
-The test script demonstrates how to use the custom handler with multiple models.
+2. To use in your own code:
+   ```python
+   import litellm
+   from litellm import completion
+   from generative_engine_handler import generative_engine_llm
 
-```bash
-python tests/test_generative_engine_litellm.py
-```
+   # Register the custom handler
+   litellm.custom_provider_map = [
+       {"provider": "generative-engine", "custom_handler": generative_engine_llm}
+   ]
 
-**Expected Output**: The script will test each model specified in the `models_to_test` list and output the assistant's responses.
-
-### Using the Custom Handler in Your Code
-
-Below is an example of how to integrate the custom handler into your own application.
-
-```python
-import os
-import logging
-import litellm
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Specify the path to your configuration file
-config_path = os.path.join(os.getcwd(), 'generative_engine_config.yaml')
-
-# Import the custom handler
-from generative_engine_litellm.generative_engine_handler import GenerativeEngineLLM
-
-# Initialize the custom handler with the config path
-generative_engine_llm = GenerativeEngineLLM(config_path=config_path)
-
-# Register the custom handler with LiteLLM
-litellm.custom_provider_map = [
-    {"provider": "generative-engine", "custom_handler": generative_engine_llm}
-]
-
-logger.info(f"Custom provider map: {litellm.custom_provider_map}")
-
-# Example function to test completion with a specific model
-def test_completion_with_model(model_name):
-    try:
-        # Include the provider prefix in the model name
-        full_model_name = f'generative-engine/{model_name}'
-        response = litellm.completion(
-            model=full_model_name,
-            messages=[{"role": "user", "content": "What is the capital of France?"}]
-        )
-        logger.info(f"Completion Response for model {full_model_name}:")
-        if response and response.choices and response.choices[0].message:
-            logger.info(f"Content: {response.choices[0].message.content}")
-        else:
-            logger.info("No content in the response")
-    except Exception as e:
-        logger.error(f"Completion Error for model {model_name}: {str(e)}")
-
-# Example usage
-if __name__ == "__main__":
-    models_to_test = [
-        'anthropic.claude-v2',
-        'openai.gpt-3.5-turbo',
-        'google.palm-2',
-    ]
-
-    for model_name in models_to_test:
-        logger.info(f"Testing model: {model_name}")
-        test_completion_with_model(model_name)
-        logger.info("\n" + "="*50 + "\n")
-```
-
-**Notes**:
-
-- Ensure that the model names match those in your `generative_engine_config.yaml` file.
-- The provider prefix `'generative-engine/'` is required in the model parameter for LiteLLM to route the request to the custom handler.
+   # Use the model
+   response = completion(
+       model="generative-engine-model",
+       messages=[{"role": "user", "content": "Your prompt here"}]
+   )
+   print(response.choices[0].message.content)
+   ```
 
 ## Customization
 
-### Adding New Models
-
-To add a new model, update your `generative_engine_config.yaml` with the model-specific configurations:
-
-```yaml
-new.model.name:
-  GENERATIVE_ENGINE_MODEL_INTERFACE: 'your_interface'
-  GENERATIVE_ENGINE_MODEL_MODE: 'your_mode'
-  GENERATIVE_ENGINE_MODEL_PROVIDER: 'your_provider'
-```
-
-- Replace `'new.model.name'` with the actual model name.
-- Update the configurations as needed.
-
-### Adjusting Configurations
-
-You can adjust the general and model-specific configurations to suit your needs. Remember to keep sensitive information secure.
+- You can modify the `model_list` in `config.yaml` to add more models or change the existing one.
+- Adjust the API base URL in `generative_engine_handler.py` if needed.
 
 ## Security Note
 

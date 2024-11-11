@@ -1,5 +1,5 @@
 config.yaml
-litellm_config.yaml
+generative_engine_config.yaml
 _pycache__/
 *.pyc
 dist/

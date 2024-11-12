@@ -110,6 +110,7 @@ print(f"Available providers: {provider_list}")
 #model_name = 'generative-engine/anthropic.claude-v2'
 model_name = 'generative-engine/openai.gpt-4o'
 #model_name = 'generative-engine/openai.o1-mini' 
+#model_name = 'generative-engine/openai.o1-preview'
 #model_name = 'generative-engine/anthropic.claude-3-5-sonnet-20240620-v1:0'   #doesn't work
 #model_name = 'generative-engine/openai.gpt-3.5-turbo'
 
@@ -124,6 +125,7 @@ try:
 except Exception as e:
     logger.error(f"Failed to create Project Planning Agent: {e}")
 
+model_name = 'generative-engine/openai.gpt-4'
 # Similarly for other agents
 logger.debug("Creating Estimation Agent with config: %s", agents_config['estimation_agent'])
 estimation_agent = Agent(
@@ -132,6 +134,7 @@ estimation_agent = Agent(
 )
 logger.info("Successfully created Estimation Agent with model: %s", model_name)
 
+model_name = 'generative-engine/openai.gpt-4o'
 logger.debug("Creating Resource Allocation Agent with config: %s", agents_config['resource_allocation_agent'])
 resource_allocation_agent = Agent(
     config=agents_config['resource_allocation_agent'],

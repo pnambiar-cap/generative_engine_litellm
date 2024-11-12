@@ -13,6 +13,7 @@ import logging
 
 # Configure logging to capture debug information
 # Explicitly configure the root logger to capture all logging levels and direct to both console and file
+logging_level = logging.ERROR
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -22,9 +23,9 @@ if logger.hasHandlers():
 
 # Add handlers to both stream (console) and file
 stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.INFO)
+stream_handler.setLevel(logging_level)
 file_handler = logging.FileHandler("/tmp/crewai_debug_forced.log")
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging_level)
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 stream_handler.setFormatter(formatter)
@@ -35,17 +36,17 @@ logger.addHandler(file_handler)
 
 # Also set logging for third-party libraries explicitly
 litellm_logger = logging.getLogger("litellm")
-litellm_logger.setLevel(logging.INFO)
+litellm_logger.setLevel(logging_level)
 litellm_logger.addHandler(stream_handler)
 litellm_logger.addHandler(file_handler)
 
 crewai_logger = logging.getLogger("crewai")
-crewai_logger.setLevel(logging.INFO)
+crewai_logger.setLevel(logging_level)
 crewai_logger.addHandler(stream_handler)
 crewai_logger.addHandler(file_handler)
 
 generative_engine_litellm = logging.getLogger("generative_engine_litellm")
-generative_engine_litellm.setLevel(logging.INFO)
+generative_engine_litellm.setLevel(logging_level)
 generative_engine_litellm.addHandler(stream_handler)
 generative_engine_litellm.addHandler(file_handler)
 
@@ -105,17 +106,21 @@ print(f"Available providers: {provider_list}")
 
 
 # Step 5: Creating Agents using the custom LLM
-
-
+# Model name to use for the agents. we can use different models for different agents if needed.
+#model_name = 'generative-engine/anthropic.claude-v2'
+model_name = 'generative-engine/openai.gpt-4o'
+#model_name = 'generative-engine/openai.o1-mini' 
+#model_name = 'generative-engine/anthropic.claude-3-5-sonnet-20240620-v1:0'   #doesn't work
+#model_name = 'generative-engine/openai.gpt-3.5-turbo'
 
 # Creating Agents with more detailed debugging
 try:
     logger.debug("Creating Project Planning Agent with config: %s", agents_config['project_planning_agent'])
     project_planning_agent = Agent(
         config=agents_config['project_planning_agent'],
-        llm=LLM(model='generative-engine/openai.gpt-4o')
+        llm=LLM(model=model_name)
     )
-    logger.info("Successfully created Project Planning Agent with model: %s", 'generative-engine/openai.gpt-4o')
+    logger.info("Successfully created Project Planning Agent with model: %s", model_name)
 except Exception as e:
     logger.error(f"Failed to create Project Planning Agent: {e}")
 
@@ -123,16 +128,16 @@ except Exception as e:
 logger.debug("Creating Estimation Agent with config: %s", agents_config['estimation_agent'])
 estimation_agent = Agent(
     config=agents_config['estimation_agent'],
-    llm=LLM(model='generative-engine/openai.gpt-4o')
+    llm=LLM(model=model_name)
 )
-logger.info("Successfully created Estimation Agent with model: %s", 'generative-engine/openai.gpt-4o')
+logger.info("Successfully created Estimation Agent with model: %s", model_name)
 
 logger.debug("Creating Resource Allocation Agent with config: %s", agents_config['resource_allocation_agent'])
 resource_allocation_agent = Agent(
     config=agents_config['resource_allocation_agent'],
-    llm=LLM(model='generative-engine/openai.gpt-4o')
+    llm=LLM(model=model_name)
 )
-logger.info("Successfully created Resource Allocation Agent with model: %s", 'generative-engine/openai.gpt-4o')
+logger.info("Successfully created Resource Allocation Agent with model: %s", model_name)
 
 
 # Step 6: Creating Tasks

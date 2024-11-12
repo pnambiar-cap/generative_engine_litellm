@@ -96,7 +96,7 @@ class GenerativeEngineLLM(CustomLLM):
                 "modelName": model,
                 "provider": model_provider,
                 "modelKwargs": {
-                    "maxTokens": kwargs.get("max_tokens", 512),
+                    "maxTokens": kwargs.get("max_tokens", 4096),
                     "temperature": kwargs.get("temperature", 0.6),
                     "streaming": False,
                     "topP": kwargs.get("top_p", 0.9)
@@ -117,7 +117,7 @@ class GenerativeEngineLLM(CustomLLM):
         logger.debug(f"Payload: {json.dumps(payload)}")
 
         try:
-            response = requests.post(url, headers=self.headers, json=payload, timeout=60)
+            response = requests.post(url, headers=self.headers, json=payload, timeout=120)
             response.raise_for_status()
             logger.debug(f"Received response: {response.text}")
 

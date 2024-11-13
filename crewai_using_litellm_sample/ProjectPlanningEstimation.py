@@ -97,6 +97,9 @@ class ProjectPlan(BaseModel):
     tasks: List[TaskEstimate] = Field(..., description="List of tasks with their estimates")
     milestones: List[Milestone] = Field(..., description="List of project milestones")
 
+class ProjectPlanList(BaseModel):
+    plans: List[ProjectPlan]  # Wraps a list of ProjectPlan models
+
 
 print(litellm.custom_provider_map)
 provider_list = [provider['provider'] for provider in litellm.custom_provider_map]
@@ -113,7 +116,7 @@ model_name = 'generative-engine/openai.gpt-4o'
 #model_name = 'generative-engine/openai.o1-preview'
 #model_name = 'generative-engine/anthropic.claude-3-5-sonnet-20240620-v1:0'   #doesn't work
 #model_name = 'generative-engine/openai.gpt-3.5-turbo'
-
+model_name = 'generative-engine/openai.gpt-4o'
 # Creating Agents with more detailed debugging
 try:
     logger.debug("Creating Project Planning Agent with config: %s", agents_config['project_planning_agent'])
@@ -125,7 +128,7 @@ try:
 except Exception as e:
     logger.error(f"Failed to create Project Planning Agent: {e}")
 
-model_name = 'generative-engine/openai.gpt-4'
+model_name = 'generative-engine/openai.gpt-4o'
 # Similarly for other agents
 logger.debug("Creating Estimation Agent with config: %s", agents_config['estimation_agent'])
 estimation_agent = Agent(
@@ -134,7 +137,7 @@ estimation_agent = Agent(
 )
 logger.info("Successfully created Estimation Agent with model: %s", model_name)
 
-model_name = 'generative-engine/openai.gpt-4o'
+model_name = 'generative-engine/openai.o1-preview'
 logger.debug("Creating Resource Allocation Agent with config: %s", agents_config['resource_allocation_agent'])
 resource_allocation_agent = Agent(
     config=agents_config['resource_allocation_agent'],
@@ -157,7 +160,8 @@ time_resource_estimation = Task(
 resource_allocation = Task(
   config=tasks_config['resource_allocation'],
   agent=resource_allocation_agent,
-  output_pydantic=ProjectPlan  # This is the structured output we want
+  #output_pydantic=ProjectPlanList  # This is the structured output we want
+  output_type=List[ProjectPlan]  # Not using output_pydantic
 )
 
 # Step 7: Creating Crew

@@ -42,3 +42,8 @@ us.meta.llama3-2-3b-instruct-v1:0:
   GENERATIVE_ENGINE_MODEL_INTERFACE: 'langchain'
   GENERATIVE_ENGINE_MODEL_MODE: 'chain'
   GENERATIVE_ENGINE_MODEL_PROVIDER: 'bedrock'
+    
+mistral.mixtral-8x7b-instruct-v0:1:
+  GENERATIVE_ENGINE_MODEL_INTERFACE: 'langchain'
+  GENERATIVE_ENGINE_MODEL_MODE: 'chain'
+  GENERATIVE_ENGINE_MODEL_PROVIDER: 'bedrock'

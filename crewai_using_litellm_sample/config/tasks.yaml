@@ -41,7 +41,9 @@ resource_allocation:
 
     {team_members}
   expected_output: >
-    A resource allocation chart showing which team members are
-    responsible for each task in the {project_type} project, along with
-    start and end dates. Your final output MUST also include a summary
-    explaining the rationale behind each allocation decision.
+    Return a JSON-like list of resource allocation objects. Each object should contain:
+      - "task_name": Name of the task
+      - "assigned_team_member": Name of the team member(s) assigned to the task
+      - "start_date": The starting date for the task
+      - "end_date": The end date for the task
+      - "allocation_rationale": Explanation of the rationale for assigning the task

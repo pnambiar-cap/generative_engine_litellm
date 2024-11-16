@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='generative_engine_litellm',
-    version='0.1.0',
+    version='0.1.1',
     description='A custom LLM implementation for LiteLLM',
     author='Pradeep Nambiar',
     author_email='pradeep.a.nambiar@capgemini.com',

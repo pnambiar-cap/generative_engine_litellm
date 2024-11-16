@@ -13,7 +13,7 @@ import logging
 
 # Configure logging to capture debug information
 # Explicitly configure the root logger to capture all logging levels and direct to both console and file
-logging_level = logging.ERROR
+logging_level = logging.DEBUG
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -111,37 +111,37 @@ print(f"Available providers: {provider_list}")
 # Step 5: Creating Agents using the custom LLM
 # Model name to use for the agents. we can use different models for different agents if needed.
 #model_name = 'generative-engine/anthropic.claude-v2'
-model_name = 'generative-engine/openai.gpt-4o'
-#model_name = 'generative-engine/openai.o1-mini' 
+#model_name = 'generative-engine/openai.gpt-4o'
+model_name = 'generative-engine/openai.o1-mini' 
 #model_name = 'generative-engine/openai.o1-preview'
 #model_name = 'generative-engine/anthropic.claude-3-5-sonnet-20240620-v1:0'   #doesn't work
 #model_name = 'generative-engine/openai.gpt-3.5-turbo'
-model_name = 'generative-engine/openai.gpt-4o'
+#model_name = 'generative-engine/openai.gpt-4'
 # Creating Agents with more detailed debugging
 try:
     logger.debug("Creating Project Planning Agent with config: %s", agents_config['project_planning_agent'])
     project_planning_agent = Agent(
         config=agents_config['project_planning_agent'],
-        llm=LLM(model=model_name)
+        llm=LLM(model=model_name, timeout=180, max_tokens=32768)
     )
     logger.info("Successfully created Project Planning Agent with model: %s", model_name)
 except Exception as e:
     logger.error(f"Failed to create Project Planning Agent: {e}")
 
-model_name = 'generative-engine/openai.gpt-4o'
+#model_name = 'generative-engine/openai.gpt-4o'
 # Similarly for other agents
 logger.debug("Creating Estimation Agent with config: %s", agents_config['estimation_agent'])
 estimation_agent = Agent(
     config=agents_config['estimation_agent'],
-    llm=LLM(model=model_name)
+    llm=LLM(model=model_name,timeout=180, max_tokens=32768)
 )
 logger.info("Successfully created Estimation Agent with model: %s", model_name)
 
-model_name = 'generative-engine/openai.o1-preview'
+model_name = 'generative-engine/openai.gpt-4o'
 logger.debug("Creating Resource Allocation Agent with config: %s", agents_config['resource_allocation_agent'])
 resource_allocation_agent = Agent(
     config=agents_config['resource_allocation_agent'],
-    llm=LLM(model=model_name)
+    llm=LLM(model=model_name, timeout=180, max_tokens=32768)
 )
 logger.info("Successfully created Resource Allocation Agent with model: %s", model_name)
 

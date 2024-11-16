@@ -73,6 +73,9 @@ class GenerativeEngineLLM(CustomLLM):
     def completion(self, model: str, messages: List[dict], *args, **kwargs) -> ModelResponse:
         url = f"{self.api_base}{self.api_endpoint}"
 
+        # Print all the positional arguments received
+        logger.debug(f"Positional arguments received: {args}")
+        logger.debug(f"Keyword arguments received: {kwargs}")
         # Combine messages into a single prompt
         prompt = " ".join([m["content"] for m in messages])
         logger.info(f"model : {model} - Received prompt: {prompt}")
@@ -83,9 +86,14 @@ class GenerativeEngineLLM(CustomLLM):
             logger.warning(f"No configuration found for model '{model}'; using defaults")
 
         # Load model-specific configuration values
-        model_interface = self.get_config_value('GENERATIVE_ENGINE_MODEL_INTERFACE', model_config, default='default')
-        model_mode = self.get_config_value('GENERATIVE_ENGINE_MODEL_MODE', model_config, default='default')
-        model_provider = self.get_config_value('GENERATIVE_ENGINE_MODEL_PROVIDER', model_config, default='capgemini')
+        model_interface = self.get_config_value('GENERATIVE_ENGINE_MODEL_INTERFACE', model_config, default='langchain')
+        model_mode = self.get_config_value('GENERATIVE_ENGINE_MODEL_MODE', model_config, default='chain')
+        model_provider = self.get_config_value('GENERATIVE_ENGINE_MODEL_PROVIDER', model_config, default='bedrock')
+
+        # Extract max_tokens from optional_params if available
+        optional_params = kwargs.get('optional_params', {})
+        max_token_value = optional_params.get('max_tokens', kwargs.get("max_tokens", 4096)) # Default Max Tokens value is 4096
+        logger.info(f"Setting max_token_value {max_token_value} for model {model}")
 
         payload = {
             "action": "run",
@@ -95,8 +103,9 @@ class GenerativeEngineLLM(CustomLLM):
                 "files": [],
                 "modelName": model,
                 "provider": model_provider,
+                "mode": model_mode,
                 "modelKwargs": {
-                    "maxTokens": kwargs.get("max_tokens", 4096),
+                    "maxTokens": max_token_value,
                     "temperature": kwargs.get("temperature", 0.6),
                     "streaming": False,
                     "topP": kwargs.get("top_p", 0.9)
@@ -104,9 +113,7 @@ class GenerativeEngineLLM(CustomLLM):
             }
         }
 
-        if model_mode != "default":
-            payload["data"]["mode"] = model_mode
-
+    
         session_id = kwargs.get("session_id")
         if session_id:
             payload["data"]["sessionId"] = session_id
@@ -116,8 +123,13 @@ class GenerativeEngineLLM(CustomLLM):
         logger.debug(f"Headers: {json.dumps(self.headers)}")
         logger.debug(f"Payload: {json.dumps(payload)}")
 
+        timeout_value = kwargs.get("timeout", 120)
+        logger.info(f"Setting timeout to {timeout_value} seconds")
+
+        start_time = time.time()
+
         try:
-            response = requests.post(url, headers=self.headers, json=payload, timeout=120)
+            response = requests.post(url, headers=self.headers, json=payload, timeout=timeout_value)
             response.raise_for_status()
             logger.debug(f"Received response: {response.text}")
 
@@ -128,7 +140,12 @@ class GenerativeEngineLLM(CustomLLM):
 
             logger.debug(f"Extracted content: {content}")
             logger.debug(f"Session ID: {session_id}")
-
+            # Check if the response contains an error message
+            
+            if "Exception" in content or "An error has occurred" in content:
+                logger.error(f"Error found in response content: {content}")
+                raise Exception(f"API response contains an error: {content}")
+            
             model_response = ModelResponse(
                 id=f"geneng-{time.time()}",
                 choices=[{
@@ -150,10 +167,17 @@ class GenerativeEngineLLM(CustomLLM):
             else:
                 logger.info("No content in the response")
 
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            logger.info(f"Request took {elapsed_time:.2f} seconds")
+
             return model_response
 
         except requests.RequestException as e:
-            logger.error(f"API request failed: {str(e)}")
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            logger.info(f"Request failed after {elapsed_time:.2f} seconds")
+            logger.info(f"API request failed: {str(e)}")
             if e.response:
                 logger.error(f"Response status code: {e.response.status_code}")
                 logger.error(f"Response headers: {e.response.headers}")

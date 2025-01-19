@@ -53,7 +53,7 @@ This repository provides the necessary files to integrate the Capgemini Generati
     Install the package locally to resolve imports:
 
     ```bash
-    pip install -e .
+    pip install  .
     ```
 
 ## Configuration
